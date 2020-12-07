@@ -13,7 +13,8 @@ async function pinFile(file) {
         body: formData
     });
     const responseHash = await response.json();
-    alert(responseHash.IpfsHash);
+    console.table(responseHash);
+    return await responseHash.IpfsHash;
 }
 
 export default pinFile;

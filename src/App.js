@@ -24,41 +24,20 @@ class App extends Component {
     super(props);
     this.state = {
       message: 'You haven\'t uploaded any file.',
-      file: [{
-        source: 'index.html',
-        options: {
-            type: 'local'
-        }
-      }],
-      ipfsHash: null
+      completed: false,
+      files: [],
+      sentFiles: [],
+      ipfsHash: [],
+      totalSupply: 0
     };
   }
-
-  componentDidMount() {
-    // this.timerID = setInterval(
-    //   () => this.tick(),
-    //   1000
-    // );
-  }
-
-  componentWillUnmount() {
-    // clearInterval(this.timerID);
-  }
-
-  // tick() {
-  //   this.setState({
-  //     date: new Date()
-  //   });
-  // }
 
   handleInit() {
   }
 
-  setStateFile(file) {
-    this.setState({
-      file: file
-    });
-    console.log(this.state.file);
+  async componentDidMount() {
+    const totalSupply = await wheels();
+    this.setState({totalSupply: totalSupply});
   }
 
   render() {
@@ -67,14 +46,39 @@ class App extends Component {
         <header className="App-header">
           <img src={logo} className="App-logo" alt="logo" />
           <p>
-            {this.state.message}
+            {this.state.message} {this.state.totalSupply}
           </p>
+          {this.state.completed &&
+            <ul>
+              {this.state.ipfsHash.map((h, i) => (
+                <li key={i}>{h}</li>
+              ))}
+            </ul>
+          }
         </header>
         <FilePond
-          server={{
+          ref = { ref => this.pond = ref }
+          files = { this.state.files }
+          allowMultiple = { true }
+          oninit = { () => this.handleInit() }
+          onupdatefiles = {(fileItems) => {
+            this.setState({
+              files: fileItems.map(f => f.file),
+              message: `Uploading ${fileItems.length} file${fileItems.length > 1 ? 's': ''}`
+            })
+          }}
+          onprocessfileprogress = {(file, progress) => {
+            this.setState({
+              message: progress !== 1 ? `Progress: ${parseInt(progress * 100)}%` : 'Load completed'
+            })
+          }}
+          server = {{
             process:(fieldName, file, metadata, load, error, progress, abort, transfer, options) => {
               
-              this.setStateFile(file);
+              this.setState({
+                file: file
+              });
+              console.log(this.state.file)
 
               const request = new XMLHttpRequest();
               request.open('POST', './');
@@ -84,9 +88,11 @@ class App extends Component {
                   progress(e.lengthComputable, e.loaded, e.total);
               };
 
+              let ipfsHash = this.state.ipfsHash.concat(pinFile(file));
               this.setState({
-                ipfsHash: pinFile(file)
+                ipfsHash: ipfsHash
               });
+              console.table(this.state.ipfsHash);
               request.send(file);
               
               return {
@@ -100,7 +106,6 @@ class App extends Component {
               };
             }
           }}
-          oninit={ () => this.handleInit() }
         ></FilePond>
       </div>
     )

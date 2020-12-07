@@ -8,10 +8,11 @@ async function wheels() {
 
     const tokenContractInstance = await web3.eth.contract(wheelsabi).at('0x8EBC7785b83506AaA295Bd9174e6A7Ad5681fb80');
     console.table(tokenContractInstance);
-    const totalSupply = tokenContractInstance.totalSupply.call(function(error, result) {
+    const totalSupply = await tokenContractInstance.totalSupply.call(function(error, result) {
         if (error) throw error;
         return result;
     });
+    console.log(`totalSupply ${totalSupply}`);
     return totalSupply;
 }
 
